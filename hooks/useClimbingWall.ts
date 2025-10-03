@@ -68,11 +68,15 @@ class BLEService {
   
   private async initializeBleManager() {
     try {
-      const { BleManager } = await import('react-native-ble-plx');
-      this.bleManager = new BleManager();
-      console.log("BLE Manager initialized for native platform");
+      const blePlx = await import('react-native-ble-plx' as any).catch(() => null);
+      if (blePlx) {
+        this.bleManager = new blePlx.BleManager();
+        console.log("BLE Manager initialized for native platform");
+      } else {
+        console.warn("react-native-ble-plx not available. BLE will only work on web via Web Bluetooth API.");
+      }
     } catch (error) {
-      console.warn("react-native-ble-plx not available. BLE will not work on native platforms.", error);
+      console.warn("react-native-ble-plx not available. BLE will only work on web via Web Bluetooth API.", error);
     }
   }
   
