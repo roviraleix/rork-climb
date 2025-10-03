@@ -5,6 +5,7 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ClimbingWallProvider } from "@/hooks/useClimbingWall";
 import { SettingsProvider } from "@/hooks/useSettings";
+import { trpc, trpcClient } from "@/lib/trpc";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -26,14 +27,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SettingsProvider>
-        <ClimbingWallProvider>
-          <GestureHandlerRootView>
-            <RootLayoutNav />
-          </GestureHandlerRootView>
-        </ClimbingWallProvider>
-      </SettingsProvider>
-    </QueryClientProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <SettingsProvider>
+          <ClimbingWallProvider>
+            <GestureHandlerRootView>
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </ClimbingWallProvider>
+        </SettingsProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
