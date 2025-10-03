@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Platform } from "react-native";
+import { Platform, NativeModules } from "react-native";
 import createContextHook from "@nkzw/create-context-hook";
 import type { GradeSystem } from "@/utils/gradeConversion";
 import type { Language } from "@/utils/i18n";
@@ -31,9 +31,30 @@ interface AppSettings {
   language: Language;
 }
 
+const getDeviceLanguage = (): Language => {
+  let deviceLanguage = "en";
+  
+  if (Platform.OS === 'web') {
+    deviceLanguage = navigator.language.split('-')[0];
+  } else {
+    const locales = NativeModules.SettingsManager?.settings?.AppleLocale ||
+                    NativeModules.SettingsManager?.settings?.AppleLanguages?.[0] ||
+                    NativeModules.I18nManager?.localeIdentifier;
+    
+    if (locales) {
+      deviceLanguage = locales.split('_')[0].split('-')[0];
+    }
+  }
+  
+  const supportedLanguages: Language[] = ["en", "es", "ca", "fr", "de"];
+  return supportedLanguages.includes(deviceLanguage as Language) 
+    ? (deviceLanguage as Language) 
+    : "en";
+};
+
 const defaultSettings: AppSettings = {
   gradeSystem: "french",
-  language: "en"
+  language: getDeviceLanguage()
 };
 
 export const [SettingsProvider, useSettings] = createContextHook(() => {

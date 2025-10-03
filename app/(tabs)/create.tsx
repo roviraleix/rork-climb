@@ -10,12 +10,12 @@ import {
   FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { X, Save, ToggleLeft, ToggleRight } from "lucide-react-native";
+import { X, Save, ToggleLeft, ToggleRight, Wifi, WifiOff } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
 import { useClimbingWall } from "@/hooks/useClimbingWall";
 import { WallGrid } from "@/components/WallGrid";
 import { ColorPicker } from "@/components/ColorPicker";
-import { ConnectionStatus } from "@/components/ConnectionStatus";
+
 import { isValidGradeForSystem, formatGradeForSystem, getGradeSuggestionsForGradeSystem } from "@/utils/gradeValidation";
 import { useSettings } from "@/hooks/useSettings";
 import { getTranslation } from "@/utils/i18n";
@@ -102,9 +102,15 @@ export default function CreateScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t("appName")}</Text>
-        <TouchableOpacity onPress={() => router.push("/connect")}>
-          <ConnectionStatus isConnected={isConnected} />
+        <TouchableOpacity 
+          style={styles.statusIcon}
+          onPress={() => router.push("/connect")}
+        >
+          {isConnected ? (
+            <Wifi color={Colors.primary} size={24} />
+          ) : (
+            <WifiOff color={Colors.accent} size={24} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -216,7 +222,7 @@ export default function CreateScreen() {
                   setGradeSuggestions(suggestions);
                   setShowGradeSuggestions(suggestions.length > 0);
                 }}
-                onBlur={() => setTimeout(() => setShowGradeSuggestions(false), 200)}
+                onBlur={() => setTimeout(() => setShowGradeSuggestions(false), 300)}
                 placeholder={`e.g., ${getGradeSuggestionsForGradeSystem("", settings.gradeSystem).slice(0, 3).join(", ")}`}
                 placeholderTextColor="#666"
               />
@@ -334,18 +340,17 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     backgroundColor: Colors.pastel.lightGreen,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.text,
+  statusIcon: {
+    padding: 8,
+    borderRadius: 8,
   },
   content: {
     flex: 1,

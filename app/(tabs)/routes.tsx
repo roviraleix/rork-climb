@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Mountain, Filter } from "lucide-react-native";
 import { Colors } from "@/constants/colors";
+import { router } from "expo-router";
 import { useClimbingWall } from "@/hooks/useClimbingWall";
 import { useSettings } from "@/hooks/useSettings";
 import { RouteCard } from "@/components/RouteCard";
@@ -41,6 +42,8 @@ export default function RoutesScreen() {
 
     setSelectedRoute(route.id);
     await loadRoute(route);
+    
+    router.push("/(tabs)/create");
     
     setTimeout(() => {
       setSelectedRoute(null);

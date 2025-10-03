@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Bluetooth, X, AlertCircle, CheckCircle } from "lucide-react-native";
 import { useClimbingWall } from "@/hooks/useClimbingWall";
-import { ConnectionStatus } from "@/components/ConnectionStatus";
+
 import { useSettings } from "@/hooks/useSettings";
 import { getTranslation } from "@/utils/i18n";
 import { router } from "expo-router";
@@ -67,16 +67,6 @@ export default function ConnectScreen() {
 
       <View style={styles.content}>
         <View style={styles.connectionSection}>
-          <Text style={styles.sectionTitle}>{t("connection")}</Text>
-          
-          <View style={styles.statusContainer}>
-            <ConnectionStatus isConnected={isConnected} />
-          </View>
-
-          <Text style={styles.description}>
-            {isConnected ? t("currentlyConnected") : t("tapToConnect")}
-          </Text>
-
           <TouchableOpacity
             style={[styles.connectButton, isConnected && styles.disconnectButton]}
             onPress={handleConnect}
@@ -103,11 +93,6 @@ export default function ConnectScreen() {
         </View>
 
         <View style={styles.instructionSection}>
-          <Text style={styles.instructionTitle}>{t("about")}</Text>
-          <Text style={styles.instructionText}>
-            {t("appDescription")}
-          </Text>
-          
           <View style={styles.colorGuide}>
             <Text style={styles.colorGuideTitle}>{t("ledColors")}</Text>
             <View style={styles.colorItem}>
@@ -248,22 +233,7 @@ const styles = StyleSheet.create({
   },
   connectionSection: {
     alignItems: "center",
-    marginBottom: 40,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: Colors.text,
-    marginBottom: 20,
-  },
-  statusContainer: {
-    marginBottom: 16,
-  },
-  description: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 60,
   },
   connectButton: {
     flexDirection: "row",
@@ -309,18 +279,7 @@ const styles = StyleSheet.create({
   },
   instructionSection: {
     flex: 1,
-  },
-  instructionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: Colors.text,
-    marginBottom: 12,
-  },
-  instructionText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    lineHeight: 24,
-    marginBottom: 24,
+    justifyContent: "center",
   },
   colorGuide: {
     backgroundColor: Colors.pastel.mint,
