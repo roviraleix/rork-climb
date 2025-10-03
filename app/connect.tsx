@@ -4,9 +4,11 @@ import {
   Text,
   View,
   TouchableOpacity,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bluetooth } from "lucide-react-native";
+import { Bluetooth, X, AlertCircle, CheckCircle } from "lucide-react-native";
 import { useClimbingWall } from "@/hooks/useClimbingWall";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { useSettings } from "@/hooks/useSettings";
@@ -16,14 +18,35 @@ import { Colors } from "@/constants/colors";
 
 export default function ConnectScreen() {
   const insets = useSafeAreaInsets();
-  const { isConnected, connect, disconnect } = useClimbingWall();
+  const { 
+    isConnected, 
+    connect, 
+    disconnect,
+    showConnectionModal,
+    showSuccessModal,
+    showErrorModal,
+    modalMessage,
+    setShowConnectionModal,
+    setShowSuccessModal,
+    setShowErrorModal,
+  } = useClimbingWall();
   const { settings } = useSettings();
+  const [isConnecting, setIsConnecting] = React.useState(false);
 
   const t = (key: string) => getTranslation(key, settings.language);
 
   const handleConnect = async () => {
     if (!isConnected) {
-      await connect();
+      setIsConnecting(true);
+      console.log("Starting connection process...");
+      try {
+        await connect();
+        console.log("Connection attempt completed");
+      } catch (error) {
+        console.error("Connection error in handleConnect:", error);
+      } finally {
+        setIsConnecting(false);
+      }
     } else {
       await disconnect();
     }
@@ -57,10 +80,15 @@ export default function ConnectScreen() {
           <TouchableOpacity
             style={[styles.connectButton, isConnected && styles.disconnectButton]}
             onPress={handleConnect}
+            disabled={isConnecting}
           >
-            <Bluetooth color="white" size={24} />
+            {isConnecting ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Bluetooth color="white" size={24} />
+            )}
             <Text style={styles.buttonText}>
-              {isConnected ? t("disconnect") : t("connectBoard")}
+              {isConnecting ? t("connecting") : isConnected ? t("disconnect") : t("connectBoard")}
             </Text>
           </TouchableOpacity>
 
@@ -101,6 +129,96 @@ export default function ConnectScreen() {
           </View>
         </View>
       </View>
+
+      {/* Success Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showSuccessModal}
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <CheckCircle color={Colors.primary} size={32} />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowSuccessModal(false)}
+              >
+                <X color={Colors.textSecondary} size={24} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalTitle}>{t("success")}</Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowSuccessModal(false)}
+            >
+              <Text style={styles.modalButtonText}>{t("ok")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Error Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showErrorModal}
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <AlertCircle color={Colors.accent} size={32} />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowErrorModal(false)}
+              >
+                <X color={Colors.textSecondary} size={24} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.modalTitle, { color: Colors.accent }]}>{t("error")}</Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: Colors.accent }]}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={styles.modalButtonText}>{t("ok")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Connection Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showConnectionModal}
+        onRequestClose={() => setShowConnectionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Bluetooth color={Colors.primary} size={32} />
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowConnectionModal(false)}
+              >
+                <X color={Colors.textSecondary} size={24} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalTitle}>{t("connection")}</Text>
+            <Text style={styles.modalMessage}>{modalMessage}</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setShowConnectionModal(false)}
+            >
+              <Text style={styles.modalButtonText}>{t("ok")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -231,5 +349,57 @@ const styles = StyleSheet.create({
   colorText: {
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: Colors.background,
+    borderRadius: 20,
+    padding: 24,
+    width: "100%",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: Colors.text,
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  modalButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: Colors.textLight,
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

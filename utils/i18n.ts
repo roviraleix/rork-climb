@@ -12,6 +12,7 @@ export const translations = {
     
     // Create screen
     connectBoard: "Connect Board",
+    connecting: "Connecting...",
     disconnect: "Disconnect",
     clearAll: "Clear All",
     saveRoute: "Save Route",
@@ -143,6 +144,7 @@ export const translations = {
     
     // Create screen
     connectBoard: "Conectar Placa",
+    connecting: "Conectando...",
     disconnect: "Desconectar",
     clearAll: "Limpiar Todo",
     saveRoute: "Guardar Ruta",
@@ -274,6 +276,7 @@ export const translations = {
     
     // Create screen
     connectBoard: "Connectar Placa",
+    connecting: "Connectant...",
     disconnect: "Desconnectar",
     clearAll: "Netejar Tot",
     saveRoute: "Guardar Ruta",
@@ -405,6 +408,7 @@ export const translations = {
     
     // Create screen
     connectBoard: "Connecter Plaque",
+    connecting: "Connexion...",
     disconnect: "Déconnecter",
     clearAll: "Tout Effacer",
     saveRoute: "Sauvegarder Voie",
@@ -536,6 +540,7 @@ export const translations = {
     
     // Create screen
     connectBoard: "Board Verbinden",
+    connecting: "Verbinden...",
     disconnect: "Trennen",
     clearAll: "Alles Löschen",
     saveRoute: "Route Speichern",
