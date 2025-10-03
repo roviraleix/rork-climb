@@ -15,14 +15,30 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.teulada"
+      "bundleIdentifier": "app.rork.teulada",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Esta app usa Bluetooth para conectarse al sistema LED de escalada.",
+        "NSBluetoothPeripheralUsageDescription": "Esta app usa Bluetooth para conectarse al sistema LED de escalada."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.teulada"
+      "package": "app.rork.teulada",
+      "versionCode": 1,
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -33,10 +49,32 @@
         {
           "origin": "https://rork.com/"
         }
-      ]
+      ],
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "modes": [
+            "peripheral",
+            "central"
+          ],
+          "bluetoothAlwaysUsageDescription": "Esta app usa Bluetooth para conectarse al sistema LED de escalada.",
+          "bluetoothPeripheralUsageDescription": "Esta app usa Bluetooth para conectarse al sistema LED de escalada."
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "6e4e7ab2-f30c-44b4-a08e-154e7be55c79"
+      }
     }
   }
 }

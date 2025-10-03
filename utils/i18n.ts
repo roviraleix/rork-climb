@@ -3,7 +3,7 @@ export type Language = "en" | "es" | "ca" | "fr" | "de";
 export const translations = {
   en: {
     // App name
-    appName: "La Fusteria",
+    appName: "ClimbLight",
     
     // Navigation
     create: "Create",
@@ -14,6 +14,9 @@ export const translations = {
     connectBoard: "Connect Board",
     connecting: "Connecting...",
     disconnect: "Disconnect",
+    searchingDevices: "Searching for devices...",
+    checkingBluetooth: "Checking Bluetooth...",
+    connectingToDevice: "Connecting to device...",
     clearAll: "Clear All",
     saveRoute: "Save Route",
     ledColor: "LED Color",
@@ -135,7 +138,7 @@ export const translations = {
   
   es: {
     // App name
-    appName: "La Fusteria",
+    appName: "ClimbLight",
     
     // Navigation
     create: "Crear",
@@ -146,6 +149,9 @@ export const translations = {
     connectBoard: "Conectar Placa",
     connecting: "Conectando...",
     disconnect: "Desconectar",
+    searchingDevices: "Buscando dispositivos...",
+    checkingBluetooth: "Verificando Bluetooth...",
+    connectingToDevice: "Conectando al dispositivo...",
     clearAll: "Limpiar Todo",
     saveRoute: "Guardar Ruta",
     ledColor: "Color LED",
@@ -267,7 +273,7 @@ export const translations = {
   
   ca: {
     // App name
-    appName: "La Fusteria",
+    appName: "ClimbLight",
     
     // Navigation
     create: "Crear",
@@ -278,6 +284,9 @@ export const translations = {
     connectBoard: "Connectar Placa",
     connecting: "Connectant...",
     disconnect: "Desconnectar",
+    searchingDevices: "Cercant dispositius...",
+    checkingBluetooth: "Verificant Bluetooth...",
+    connectingToDevice: "Connectant al dispositiu...",
     clearAll: "Netejar Tot",
     saveRoute: "Guardar Ruta",
     ledColor: "Color LED",
@@ -399,7 +408,7 @@ export const translations = {
   
   fr: {
     // App name
-    appName: "La Fusteria",
+    appName: "ClimbLight",
     
     // Navigation
     create: "Créer",
@@ -410,6 +419,9 @@ export const translations = {
     connectBoard: "Connecter Plaque",
     connecting: "Connexion...",
     disconnect: "Déconnecter",
+    searchingDevices: "Recherche d'appareils...",
+    checkingBluetooth: "Vérification Bluetooth...",
+    connectingToDevice: "Connexion à l'appareil...",
     clearAll: "Tout Effacer",
     saveRoute: "Sauvegarder Voie",
     ledColor: "Couleur LED",
@@ -531,7 +543,7 @@ export const translations = {
   
   de: {
     // App name
-    appName: "La Fusteria",
+    appName: "ClimbLight",
     
     // Navigation
     create: "Erstellen",
@@ -542,6 +554,9 @@ export const translations = {
     connectBoard: "Board Verbinden",
     connecting: "Verbinden...",
     disconnect: "Trennen",
+    searchingDevices: "Suche nach Geräten...",
+    checkingBluetooth: "Bluetooth prüfen...",
+    connectingToDevice: "Mit Gerät verbinden...",
     clearAll: "Alles Löschen",
     saveRoute: "Route Speichern",
     ledColor: "LED-Farbe",
