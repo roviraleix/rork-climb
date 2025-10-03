@@ -68,7 +68,7 @@ class BLEService {
   
   private async initializeBleManager() {
     try {
-      const blePlx = await import('react-native-ble-plx' as any).catch(() => null);
+      const blePlx = await import('react-native-ble-plx').catch(() => null);
       if (blePlx) {
         this.bleManager = new blePlx.BleManager();
         console.log("BLE Manager initialized for native platform");
