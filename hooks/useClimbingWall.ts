@@ -453,61 +453,59 @@ export const [ClimbingWallProvider, useClimbingWall] = createContextHook(() => {
     }
   }, [getColorRGB, parseHoldId]);
 
+  const applyDoubleLedEffect = useCallback(async (holds: SelectedHolds) => {
+    if (!doubleLedMode) return holds;
+    
+    const newHolds = { ...holds };
+    const whiteHolds: string[] = [];
+    
+    // Find all colored holds and add white LEDs below them
+    Object.entries(holds).forEach(([holdId, color]) => {
+      const { row, col } = parseHoldId(holdId);
+      const belowHoldId = `${row + 1}-${col}`;
+      
+      // Check if the LED below is within bounds
+      if (row + 1 < wallDimensions.rows) {
+        // If there's no colored LED below, add a white one
+        if (!newHolds[belowHoldId]) {
+          newHolds[belowHoldId] = "green"; // Using green as white placeholder
+          whiteHolds.push(belowHoldId);
+        }
+        // If there's already a colored LED, it has priority (do nothing)
+      }
+    });
+    
+    // Send LED commands for white LEDs
+    for (const holdId of whiteHolds) {
+      const { row, col } = parseHoldId(holdId);
+      await bleService.setLED(row, col, 255, 255, 255); // White color
+    }
+    
+    return newHolds;
+  }, [doubleLedMode, parseHoldId, wallDimensions]);
+
   const toggleHold = useCallback(async (holdId: string) => {
     if (!isConnected) return;
 
-    const newHolds = { ...selectedHolds };
+    let newHolds = { ...selectedHolds };
     
     if (newHolds[holdId]) {
       // Remove hold
       delete newHolds[holdId];
       await sendLEDCommand(holdId, "off");
-      
-      // If double LED mode is enabled, also turn off adjacent LEDs
-      if (doubleLedMode) {
-        const { row, col } = parseHoldId(holdId);
-        const adjacentHolds = [
-          `${row}-${col + 1}`,
-          `${row + 1}-${col}`,
-          `${row}-${col - 1}`,
-          `${row - 1}-${col}`
-        ];
-        
-        for (const adjacentHold of adjacentHolds) {
-          if (newHolds[adjacentHold]) {
-            delete newHolds[adjacentHold];
-            await sendLEDCommand(adjacentHold, "off");
-          }
-        }
-      }
     } else {
       // Add hold with selected color
       newHolds[holdId] = selectedColor;
       await sendLEDCommand(holdId, selectedColor);
-      
-      // If double LED mode is enabled, also light up adjacent LEDs
-      if (doubleLedMode) {
-        const { row, col } = parseHoldId(holdId);
-        const adjacentHolds = [
-          `${row}-${col + 1}`,
-          `${row + 1}-${col}`,
-          `${row}-${col - 1}`,
-          `${row - 1}-${col}`
-        ];
-        
-        for (const adjacentHold of adjacentHolds) {
-          const { row: adjRow, col: adjCol } = parseHoldId(adjacentHold);
-          // Check if adjacent hold is within wall bounds
-          if (adjRow >= 0 && adjRow < wallDimensions.rows && adjCol >= 0 && adjCol < wallDimensions.cols) {
-            newHolds[adjacentHold] = selectedColor;
-            await sendLEDCommand(adjacentHold, selectedColor);
-          }
-        }
-      }
+    }
+    
+    // Apply double LED effect if enabled
+    if (doubleLedMode) {
+      newHolds = await applyDoubleLedEffect(newHolds);
     }
     
     setSelectedHolds(newHolds);
-  }, [isConnected, selectedHolds, selectedColor, sendLEDCommand, doubleLedMode, parseHoldId, wallDimensions]);
+  }, [isConnected, selectedHolds, selectedColor, sendLEDCommand, doubleLedMode, applyDoubleLedEffect]);
 
   const clearAll = useCallback(async () => {
     if (!isConnected) return;
@@ -523,6 +521,44 @@ export const [ClimbingWallProvider, useClimbingWall] = createContextHook(() => {
       showModal("error", "Failed to clear LEDs");
     }
   }, [isConnected, showModal]);
+
+  // Effect to update double LED when mode changes
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    const updateDoubleLed = async () => {
+      if (doubleLedMode) {
+        // Apply double LED effect
+        const newHolds = await applyDoubleLedEffect(selectedHolds);
+        setSelectedHolds(newHolds);
+      } else {
+        // Remove white LEDs (keep only original colored holds)
+        const originalHolds: SelectedHolds = {};
+        
+        // Clear all LEDs first
+        await bleService.turnOffAllLEDs();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Re-light only the original colored holds
+        for (const [holdId, color] of Object.entries(selectedHolds)) {
+          const { row, col } = parseHoldId(holdId);
+          
+          // Check if this is a white LED (below another LED)
+          const aboveHoldId = `${row - 1}-${col}`;
+          const isWhiteLed = selectedHolds[aboveHoldId] !== undefined;
+          
+          if (!isWhiteLed) {
+            originalHolds[holdId] = color;
+            await sendLEDCommand(holdId, color);
+          }
+        }
+        
+        setSelectedHolds(originalHolds);
+      }
+    };
+    
+    updateDoubleLed();
+  }, [doubleLedMode, isConnected, applyDoubleLedEffect, selectedHolds, parseHoldId, sendLEDCommand]);
 
   const saveRoute = useCallback(async (routeData: Omit<ClimbingRoute, "id">) => {
     try {
