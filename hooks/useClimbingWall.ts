@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Platform } from "react-native";
+import { Platform, PermissionsAndroid } from "react-native";
 import createContextHook from "@nkzw/create-context-hook";
 import type { ClimbingRoute, HoldColor, SelectedHolds, WallDimensions } from "@/types/climbing";
 import { convertGrade, type GradeSystem } from "@/utils/gradeConversion";
@@ -13,6 +13,11 @@ declare global {
     };
   }
 }
+
+// BLE PLX types for native
+type BleManager = any;
+type Device = any;
+type Characteristic = any;
 
 const ROUTES_STORAGE_KEY = "climbing_routes";
 const WALL_DIMENSIONS_KEY = "wall_dimensions";
@@ -51,30 +56,74 @@ class BLEService {
   private isConnected = false;
   private device: any = null;
   private characteristic: any = null;
+  private bleManager: BleManager | null = null;
   private readonly SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
   private readonly CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+  
+  constructor() {
+    if (Platform.OS !== 'web') {
+      this.initializeBleManager();
+    }
+  }
+  
+  private async initializeBleManager() {
+    try {
+      const { BleManager } = await import('react-native-ble-plx');
+      this.bleManager = new BleManager();
+      console.log("BLE Manager initialized for native platform");
+    } catch (error) {
+      console.warn("react-native-ble-plx not available. BLE will not work on native platforms.", error);
+    }
+  }
+  
+  private async requestAndroidPermissions(): Promise<boolean> {
+    if (Platform.OS !== 'android') return true;
+    
+    try {
+      if (Platform.Version >= 31) {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+        
+        return (
+          granted['android.permission.BLUETOOTH_SCAN'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.BLUETOOTH_CONNECT'] === PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+        );
+      } else {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        ]);
+        
+        return (
+          granted['android.permission.ACCESS_FINE_LOCATION'] === PermissionsAndroid.RESULTS.GRANTED
+        );
+      }
+    } catch (error) {
+      console.error("Error requesting Android permissions:", error);
+      return false;
+    }
+  }
   
   async connect(): Promise<boolean> {
     try {
       if (Platform.OS === 'web') {
-        // Check if we're in a secure context (HTTPS)
         if (!window.isSecureContext) {
           throw new Error("Web Bluetooth requires HTTPS. Please use a secure connection.");
         }
         
-        // Check if Web Bluetooth is supported
         if (!navigator.bluetooth) {
           throw new Error("Web Bluetooth is not supported in this browser. Please use Chrome, Edge, or Opera.");
         }
         
-        // Check if Bluetooth is available (optional check as some browsers don't support getAvailability)
         try {
           const available = await navigator.bluetooth.getAvailability();
           if (!available) {
             throw new Error("Bluetooth is not available. Please enable Bluetooth on your device.");
           }
         } catch (availabilityError) {
-          // Some browsers don't support getAvailability, continue anyway
           console.warn("Could not check Bluetooth availability:", availabilityError);
         }
         
@@ -101,12 +150,71 @@ class BLEService {
         console.log("Connected to board via Web Bluetooth");
         return true;
       } else {
-        // React Native BLE using expo-bluetooth
-        // For now, simulate connection as expo-bluetooth is not available in Expo Go
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        this.isConnected = true;
-        console.log("Connected to board (simulated - native BLE not available in Expo Go)");
-        return true;
+        if (!this.bleManager) {
+          throw new Error("BLE Manager not initialized. Make sure react-native-ble-plx is installed.");
+        }
+        
+        const hasPermissions = await this.requestAndroidPermissions();
+        if (!hasPermissions) {
+          throw new Error("Bluetooth permissions not granted. Please enable Bluetooth permissions in settings.");
+        }
+        
+        const state = await this.bleManager.state();
+        if (state !== 'PoweredOn') {
+          throw new Error("Bluetooth is not enabled. Please turn on Bluetooth.");
+        }
+        
+        console.log("Scanning for devices...");
+        
+        return new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            this.bleManager?.stopDeviceScan();
+            reject(new Error("Device not found. Make sure your board is powered on and nearby."));
+          }, 10000);
+          
+          this.bleManager.startDeviceScan([this.SERVICE_UUID], null, async (error: any, device: Device) => {
+            if (error) {
+              clearTimeout(timeout);
+              this.bleManager?.stopDeviceScan();
+              reject(error);
+              return;
+            }
+            
+            if (device && (device.name === 'FUSTERIA' || device.name === 'LA FUSTERIA RESIS')) {
+              console.log("Found device:", device.name);
+              this.bleManager?.stopDeviceScan();
+              clearTimeout(timeout);
+              
+              try {
+                this.device = await device.connect();
+                await this.device.discoverAllServicesAndCharacteristics();
+                
+                const services = await this.device.services();
+                const service = services.find((s: any) => s.uuid.toLowerCase() === this.SERVICE_UUID.toLowerCase());
+                
+                if (!service) {
+                  throw new Error("Service not found on device");
+                }
+                
+                const characteristics = await service.characteristics();
+                this.characteristic = characteristics.find(
+                  (c: Characteristic) => c.uuid.toLowerCase() === this.CHARACTERISTIC_UUID.toLowerCase()
+                );
+                
+                if (!this.characteristic) {
+                  throw new Error("Characteristic not found on device");
+                }
+                
+                this.isConnected = true;
+                console.log("Connected to board via native BLE");
+                resolve(true);
+              } catch (connectError) {
+                console.error("Error connecting to device:", connectError);
+                reject(connectError);
+              }
+            }
+          });
+        });
       }
     } catch (error) {
       console.error("BLE connection error:", error);
@@ -118,6 +226,8 @@ class BLEService {
     try {
       if (Platform.OS === 'web' && this.device) {
         await this.device.gatt.disconnect();
+      } else if (Platform.OS !== 'web' && this.device) {
+        await this.device.cancelConnection();
       }
       
       this.isConnected = false;
@@ -138,14 +248,25 @@ class BLEService {
       if (Platform.OS === 'web' && this.characteristic) {
         await this.characteristic.writeValue(data);
         console.log("Sent BLE LED data:", Array.from(data));
+      } else if (Platform.OS !== 'web' && this.characteristic) {
+        const base64Data = this.uint8ArrayToBase64(data);
+        await this.characteristic.writeWithoutResponse(base64Data);
+        console.log("Sent BLE LED data (native):", Array.from(data));
       } else {
-        // Simulate command sending for native (Expo Go limitation)
-        console.log("Simulated BLE LED data:", Array.from(data));
+        console.log("BLE not available, simulated LED data:", Array.from(data));
       }
     } catch (error) {
       console.error("Error sending BLE LED data:", error);
       throw error;
     }
+  }
+  
+  private uint8ArrayToBase64(data: Uint8Array): string {
+    let binary = '';
+    for (let i = 0; i < data.length; i++) {
+      binary += String.fromCharCode(data[i]);
+    }
+    return btoa(binary);
   }
   
   async turnOffAllLEDs(): Promise<void> {
@@ -160,7 +281,7 @@ class BLEService {
     await this.sendLEDData(data);
   }
   
-  async setMultipleLEDs(leds: Array<{row: number, col: number, red: number, green: number, blue: number}>): Promise<void> {
+  async setMultipleLEDs(leds: {row: number, col: number, red: number, green: number, blue: number}[]): Promise<void> {
     // Send multiple LED commands in one packet
     const data = new Uint8Array(leds.length * 5);
     for (let i = 0; i < leds.length; i++) {
@@ -201,12 +322,6 @@ export const [ClimbingWallProvider, useClimbingWall] = createContextHook(() => {
   const [modalMessage, setModalMessage] = useState("");
   const [doubleLedMode, setDoubleLedMode] = useState(false);
 
-  // Load saved data on mount
-  useEffect(() => {
-    loadSavedRoutes();
-    loadWallDimensions();
-  }, []);
-
   const loadSavedRoutes = useCallback(async () => {
     try {
       const stored = await storage.getItem(ROUTES_STORAGE_KEY);
@@ -228,6 +343,11 @@ export const [ClimbingWallProvider, useClimbingWall] = createContextHook(() => {
       console.error("Error loading wall dimensions:", error);
     }
   }, []);
+
+  useEffect(() => {
+    loadSavedRoutes();
+    loadWallDimensions();
+  }, [loadSavedRoutes, loadWallDimensions]);
 
   const showModal = useCallback((type: "success" | "error" | "connection", message: string) => {
     if (!message?.trim() || message.length > 200) return;
